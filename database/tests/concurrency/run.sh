@@ -10,7 +10,10 @@ cd "$(dirname "$0")"
 
 PSQL="psql -U stockloom_app -h localhost -d stockloom"
 
-PRODUCT_ID=$($PSQL -tAc "INSERT INTO product (name, unit_price, category, current_stock) VALUES ('Concurrency Test Widget', 9.99, 'Test', 100) RETURNING product_id;")
+# -q suppresses the "INSERT 0 1" command-completion tag that psql prints
+# after non-SELECT commands even with -t -A -- without it, that tag lands
+# as a second line in this command substitution and corrupts PRODUCT_ID.
+PRODUCT_ID=$($PSQL -tAq -c "INSERT INTO product (name, unit_price, category, current_stock) VALUES ('Concurrency Test Widget', 9.99, 'Test', 100) RETURNING product_id;")
 echo "Test product_id=$PRODUCT_ID, starting stock=100"
 
 $PSQL -v product_id="$PRODUCT_ID" -v customer_id=1 -f session_a.sql > out_a.txt 2>&1 &
